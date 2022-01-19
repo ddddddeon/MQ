@@ -51,11 +51,8 @@ namespace Broker
             var client = (TcpClient)obj;
             NetworkStream ns = client.GetStream();
 
-            //TODO check if queue name is given in headers, for now just create one
-            QueueContainer qc = new QueueContainer("test-queue");
-            queueContainers.Append(qc);
-
-            Channel channel = new Channel(ns, qc);
+            // TODO make queueContainers a singleton?
+            Channel channel = new Channel(ns, queueContainers);
             channels.Append(channel);
 
             channel.Send("> ");

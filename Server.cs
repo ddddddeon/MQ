@@ -5,7 +5,10 @@ namespace Broker
 {
     class Server
     {
-        public int Port { get; set; }
+        public int Port { get; private set; }
+        public List<Channel> channels = new List<Channel>();
+        public List<QueueContainer> queueContainers = new List<QueueContainer>();
+
         public Server(int port)
         {
             Port = port;
@@ -35,7 +38,10 @@ namespace Broker
 
             //TODO check if queue name is given in headers, for now just create one
             QueueContainer qc = new QueueContainer("test-queue");
+            queueContainers.Append(qc);
+
             Channel channel = new Channel(ns, qc);
+            channels.Append(channel);
 
             channel.Send("> ");
             channel.ReadAndRespond();

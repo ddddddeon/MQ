@@ -9,9 +9,10 @@ namespace Broker
         StringBuilder FullMessage = new StringBuilder();
         public int Id;
         public NetworkStream Stream { get; private set; }
-        public Queue<string> Queue { get; private set; }
-        private List<QueueContainer> QueueContainers { get; set; }
+        public QueueContainer Container { get; private set; }
+        public List<QueueContainer> QueueContainers { get; set; }
         private bool IsConnected = false;
+        private bool QueueConnected = false;
         private int Recv;
         private byte[] Data;
         private string MessageTerminator = "END;\n";
@@ -35,8 +36,9 @@ namespace Broker
         private void CreateQueueContainer(string queueName)
         {
             QueueContainer newQueueContainer = new QueueContainer(queueName);
-            Queue = newQueueContainer.Queue;
-            QueueContainers.Append(newQueueContainer);
+            Container = newQueueContainer;
+            QueueContainers.Add(newQueueContainer);
+            QueueConnected = true;
         }
 
         private void HandleHeaders(string message)
@@ -45,19 +47,22 @@ namespace Broker
             var matches = QueueNameRegex.Matches(message);
             if (matches.Count == 0)
             {
-                // TODO: make unique
-                string uniqueQueueName = "foobar";
-                CreateQueueContainer(uniqueQueueName);
+                if (!QueueConnected)
+                {
+                    // TODO: make unique
+                    string uniqueQueueName = "foobar";
+                    CreateQueueContainer(uniqueQueueName);
+                }
             }
             else
             {
                 string headerString = matches[0].Value;
-                string queueName = headerString.Replace(QueueNameHeaderString, "");
+                string queueName = headerString.Replace(QueueNameHeaderString, "").Replace(";", "");
                 QueueContainer existingQueueContainer = QueueContainers.Find(q => q.Name == queueName);
 
                 if (existingQueueContainer != null)
                 {
-                    Queue = existingQueueContainer.Queue;
+                    Container = existingQueueContainer;
                 }
                 else
                 {
@@ -85,12 +90,16 @@ namespace Broker
                 FullMessage.Replace(MessageTerminator, "");
                 string fullMessageString = FullMessage.ToString();
                 Console.WriteLine("Reached end of message! {0}", fullMessageString);
+                Console.WriteLine("queueContainers: {0}", QueueContainers.Count);
+                Console.WriteLine("Queue name: {0}", Container.Name);
 
-                Queue.Enqueue(fullMessageString);
+                Container.Queue.Enqueue(fullMessageString);
+                FullMessage.Clear();
+
                 Data = Encoding.ASCII.GetBytes("> ");
                 Stream.Write(Data, 0, Data.Length);
 
-                var item = Queue.Dequeue();
+                var item = Container.Queue.Dequeue();
                 Console.WriteLine(item);
             }
         }

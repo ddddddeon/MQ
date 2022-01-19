@@ -5,7 +5,12 @@ namespace Broker
 {
     class Server
     {
-        public int Port { get; set; }
+        public int Port { get; private set; }
+        public bool IsRunning { get; set; }
+        public List<Channel> channels = new List<Channel>();
+        public List<QueueContainer> queueContainers = new List<QueueContainer>();
+        public List<TcpClient> tcpClients = new List<TcpClient>();
+
         public Server(int port)
         {
             Port = port;
@@ -15,67 +20,46 @@ namespace Broker
         {
             try
             {
-                Listen();
+                TcpListener listener = TcpListener.Create(9000);
+                listener.Start();
+                IsRunning = true;
+
+                Console.WriteLine("Server listening on port {0}", Port);
+                Listen(listener);
             }
             catch (Exception e)
             {
+                IsRunning = false;
                 Console.WriteLine(e.ToString());
             }
         }
 
-        private void Listen()
+        private void Listen(TcpListener listener)
         {
-            int recv = 0;
-            byte[] data = new byte[1024];
-            StringBuilder fullMessage = new StringBuilder();
+            while (IsRunning)
+            {
+                TcpClient client = listener.AcceptTcpClient();
+                tcpClients.Append(client);
 
-            TcpListener listener = TcpListener.Create(9000);
-            listener.Start();
+                var t = new Thread(new ParameterizedThreadStart(CreateChannel));
+                t.Start(client);
+            }
+        }
 
-            Console.WriteLine("Server listening on port {0}", Port);
-
-            TcpClient client = listener.AcceptTcpClient();
+        private void CreateChannel(object obj)
+        {
+            var client = (TcpClient)obj;
             NetworkStream ns = client.GetStream();
 
-            data = Encoding.ASCII.GetBytes("> ");
-            ns.Write(data, 0, data.Length);
+            //TODO check if queue name is given in headers, for now just create one
+            QueueContainer qc = new QueueContainer("test-queue");
+            queueContainers.Append(qc);
 
-            while (true)
-            {
-                data = new byte[1024];
-                recv = ns.Read(data, 0, data.Length);
-                if (recv == 0)
-                {
-                    break;
-                }
+            Channel channel = new Channel(ns, qc);
+            channels.Append(channel);
 
-                string message = Encoding.ASCII.GetString(data, 0, recv);
-                fullMessage.Append(message);
-
-                string terminatorString = "END;\n";
-                int terminatorIndex = message.IndexOf(terminatorString);
-
-                // respond only if terminator string is actually at the end of the message
-                if (terminatorIndex > -1 && terminatorIndex == message.Length - 5)
-                {
-                    string fullMessageString = fullMessage.ToString();
-                    Console.WriteLine("Reached end of message! {0}", fullMessageString);
-
-                    var qc = new QueueContainer("test");
-                    var queue = qc.Queue;
-
-                    // strip terminator string from message
-                    fullMessageString = fullMessageString.Substring(0, fullMessageString.Length - terminatorString.Length);
-
-                    queue.Enqueue(fullMessageString);
-                    data = Encoding.ASCII.GetBytes("> ");
-                    ns.Write(data, 0, data.Length);
-
-                    var item = queue.Dequeue();
-                    Console.WriteLine(item);
-                }
-            }
-
+            channel.Send("> ");
+            channel.ReadAndRespond();
         }
     }
 }

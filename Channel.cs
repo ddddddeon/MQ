@@ -33,12 +33,22 @@ namespace Broker
             Stream.Write(bytes);
         }
 
-        private void CreateQueueContainer(string queueName)
+        public void ReadAndRespond()
         {
-            QueueContainer newQueueContainer = new QueueContainer(queueName);
-            Container = newQueueContainer;
-            QueueContainers.Add(newQueueContainer);
-            QueueConnected = true;
+            while (IsConnected)
+            {
+                Data = new byte[1024];
+                Recv = Stream.Read(Data, 0, Data.Length);
+                if (Recv == 0)
+                {
+                    break;
+                }
+
+                string message = Encoding.ASCII.GetString(Data, 0, Recv);
+                HandleHeaders(message);
+                HandleMessage(message);
+                HandleDisconnect(message);
+            }
         }
 
         private void HandleHeaders(string message)
@@ -76,12 +86,6 @@ namespace Broker
             FullMessage.Append(message);
         }
 
-        private bool IsPresentAtEnd(string message, string str)
-        {
-            int index = message.IndexOf(str);
-            return (index > -1 && index == message.Length - str.Length);
-        }
-
         private void HandleMessage(string message)
         {
             // respond only if terminator string is actually at the end of the message
@@ -113,22 +117,18 @@ namespace Broker
             }
         }
 
-        public void ReadAndRespond()
+        private void CreateQueueContainer(string queueName)
         {
-            while (IsConnected)
-            {
-                Data = new byte[1024];
-                Recv = Stream.Read(Data, 0, Data.Length);
-                if (Recv == 0)
-                {
-                    break;
-                }
+            QueueContainer newQueueContainer = new QueueContainer(queueName);
+            Container = newQueueContainer;
+            QueueContainers.Add(newQueueContainer);
+            QueueConnected = true;
+        }
 
-                string message = Encoding.ASCII.GetString(Data, 0, Recv);
-                HandleHeaders(message);
-                HandleMessage(message);
-                HandleDisconnect(message);
-            }
+        private bool IsPresentAtEnd(string message, string str)
+        {
+            int index = message.IndexOf(str);
+            return (index > -1 && index == message.Length - str.Length);
         }
     }
 }

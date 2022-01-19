@@ -6,8 +6,10 @@ namespace Broker
     class Server
     {
         public int Port { get; private set; }
+        public bool IsRunning { get; set; }
         public List<Channel> channels = new List<Channel>();
         public List<QueueContainer> queueContainers = new List<QueueContainer>();
+        public List<TcpClient> tcpClients = new List<TcpClient>();
 
         public Server(int port)
         {
@@ -18,22 +20,35 @@ namespace Broker
         {
             try
             {
-                Listen();
+                TcpListener listener = TcpListener.Create(9000);
+                listener.Start();
+                IsRunning = true;
+
+                Console.WriteLine("Server listening on port {0}", Port);
+                Listen(listener);
             }
             catch (Exception e)
             {
+                IsRunning = false;
                 Console.WriteLine(e.ToString());
             }
         }
 
-        private void Listen()
+        private void Listen(TcpListener listener)
         {
-            TcpListener listener = TcpListener.Create(9000);
-            listener.Start();
+            while (IsRunning)
+            {
+                TcpClient client = listener.AcceptTcpClient();
+                tcpClients.Append(client);
 
-            Console.WriteLine("Server listening on port {0}", Port);
+                var t = new Thread(new ParameterizedThreadStart(CreateChannel));
+                t.Start(client);
+            }
+        }
 
-            TcpClient client = listener.AcceptTcpClient();
+        private void CreateChannel(object obj)
+        {
+            var client = (TcpClient)obj;
             NetworkStream ns = client.GetStream();
 
             //TODO check if queue name is given in headers, for now just create one

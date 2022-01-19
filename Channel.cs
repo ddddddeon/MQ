@@ -6,11 +6,11 @@ namespace Broker
 {
     class Channel
     {
-        StringBuilder FullMessage = new StringBuilder();
         public int Id;
         public NetworkStream Stream { get; private set; }
         public QueueContainer Container { get; private set; }
         public List<QueueContainer> QueueContainers { get; set; }
+
         private bool IsConnected = false;
         private bool QueueConnected = false;
         private int Recv;
@@ -19,6 +19,7 @@ namespace Broker
         private string ChannelTerminator = "DISCONNECT;\n";
         private string QueueNameHeaderString = "QUEUE_NAME=";
         private Regex QueueNameRegex = new Regex(@"^QUEUE_NAME\=[a-zA-Z0-9_-]+;");
+        private StringBuilder FullMessage = new StringBuilder();
 
         public Channel(NetworkStream stream, List<QueueContainer> queueContainers)
         {

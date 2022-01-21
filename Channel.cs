@@ -29,18 +29,18 @@ namespace Broker
             IsConnected = true;
         }
 
-        public void Send(string message)
+        public async Task Send(string message)
         {
             byte[] bytes = Encoding.ASCII.GetBytes(message);
             Stream.Write(bytes);
         }
 
-        public void ReadAndRespond()
+        public async Task ReadAndRespond()
         {
             while (IsConnected)
             {
                 Data = new byte[1024];
-                Recv = Stream.Read(Data, 0, Data.Length);
+                Recv = await Stream.ReadAsync(Data, 0, Data.Length);
                 if (Recv == 0)
                 {
                     break;

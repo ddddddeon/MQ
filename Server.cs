@@ -16,7 +16,7 @@ namespace Broker
             Port = port;
         }
 
-        public void Start()
+        public async Task Start()
         {
             try
             {
@@ -25,7 +25,15 @@ namespace Broker
                 IsRunning = true;
 
                 Console.WriteLine("Server listening on port {0}", Port);
-                Listen(listener);
+
+                while (IsRunning)
+                {
+                    TcpClient client = listener.AcceptTcpClient();
+                    tcpClients.Append(client);
+
+                    await CreateChannel(client);
+                }
+
             }
             catch (Exception e)
             {
@@ -34,19 +42,7 @@ namespace Broker
             }
         }
 
-        private void Listen(TcpListener listener)
-        {
-            while (IsRunning)
-            {
-                TcpClient client = listener.AcceptTcpClient();
-                tcpClients.Append(client);
-
-                var t = new Thread(new ParameterizedThreadStart(CreateChannel));
-                t.Start(client);
-            }
-        }
-
-        private void CreateChannel(object obj)
+        private async Task CreateChannel(object obj)
         {
             var client = (TcpClient)obj;
             NetworkStream ns = client.GetStream();
@@ -55,8 +51,8 @@ namespace Broker
             Channel channel = new Channel(ns, queueContainers);
             channels.Append(channel);
 
-            channel.Send("> ");
-            channel.ReadAndRespond();
+            await channel.Send("> ");
+            await channel.ReadAndRespond();
         }
     }
 }

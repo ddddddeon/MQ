@@ -2,10 +2,10 @@
 {
     public class Program
     {
-        public static void Main()
+        public static async Task Main()
         {
             var server = new Server(9000);
-            server.Start();
+            await server.Start();
         }
     }
 }

@@ -31,7 +31,7 @@ namespace Broker
                     TcpClient client = listener.AcceptTcpClient();
                     tcpClients.Append(client);
 
-                    await CreateChannel(client);
+                    CreateChannel(client);
                 }
 
             }

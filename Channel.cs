@@ -18,8 +18,9 @@ namespace Broker
         private string MessageTerminator = "END;\n";
         private string ChannelTerminator = "DISCONNECT;\n";
         private string QueueNameHeaderString = "QUEUE_NAME=";
-        private Regex QueueNameRegex = new Regex(@"^QUEUE_NAME\=[a-zA-Z0-9_-]+;");
+        private Regex HeadersRegex = new Regex(@"^(EN|DE)\;(NAME\=([a-zA-Z0-9_-]+)\;)?");
         private StringBuilder FullMessage = new StringBuilder();
+        private string Operation;
 
         public Channel(NetworkStream stream, List<QueueContainer> queueContainers)
         {
@@ -55,20 +56,20 @@ namespace Broker
         private void HandleHeaders(string message)
         {
             // Check beginning of message for QUEUE_NAME header
-            var matches = QueueNameRegex.Matches(message);
-            if (matches.Count == 0)
+            var match = HeadersRegex.Match(message);
+            var captureGroups = match.Groups;
+
+            Operation = captureGroups[1].Value;
+
+            if (Operation == "EN" && !captureGroups[1].Success && !QueueConnected)
             {
-                if (!QueueConnected)
-                {
-                    // TODO: make unique
-                    string uniqueQueueName = "foobar";
-                    CreateQueueContainer(uniqueQueueName);
-                }
+                // TODO: make unique
+                string uniqueQueueName = "foobar";
+                CreateQueueContainer(uniqueQueueName);
             }
-            else
+            else if (captureGroups[2].Success && captureGroups[3].Success)
             {
-                string headerString = matches[0].Value;
-                string queueName = headerString.Replace(QueueNameHeaderString, "").Replace(";", "");
+                string queueName = captureGroups[3].Value;
                 QueueContainer existingQueueContainer = QueueContainers.Find(q => q.Name == queueName);
 
                 if (existingQueueContainer != null)
@@ -79,11 +80,12 @@ namespace Broker
                 {
                     CreateQueueContainer(queueName);
                 }
-
-                //strip out the queue name
-                message = message.Replace(headerString, "");
             }
-
+            //strip out the headers
+            if (match.Value.Length > 0)
+            {
+                message = message.Replace(match.Value, "");
+            }
             FullMessage.Append(message);
         }
 
@@ -98,14 +100,22 @@ namespace Broker
                 Console.WriteLine("queueContainers: {0}", QueueContainers.Count);
                 Console.WriteLine("Queue name: {0}", Container.Name);
 
-                Container.Queue.Enqueue(fullMessageString);
-                FullMessage.Clear();
-
-                Data = Encoding.ASCII.GetBytes("> ");
-                Stream.Write(Data, 0, Data.Length);
-
-                var item = Container.Queue.Dequeue();
-                Console.WriteLine(item);
+                if (Operation == "EN")
+                {
+                    Container.Queue.Enqueue(fullMessageString);
+                    FullMessage.Clear();
+                    Send("OK");
+                    Send("> ");
+                }
+                else if (Operation == "DE")
+                {
+                    var item = "";
+                    if (Container.Queue.Count > 0)
+                    {
+                        item = Container.Queue.Dequeue();
+                    }
+                    Send(item);
+                }
             }
         }
 

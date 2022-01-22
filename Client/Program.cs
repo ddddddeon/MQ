@@ -18,11 +18,11 @@ namespace MQ.Client
 
             string res;
 
-            await client.Write("EN;NAME=chris;asdfEND;");
+            await client.Write("EN;NAME=chris;asdfEND;\n");
             res = await client.Read();
             Console.WriteLine(res);
 
-            await client.Write("DE;END;");
+            await client.Write("DE;END;\n");
             res = await client.Read();
             Console.WriteLine(res);
 

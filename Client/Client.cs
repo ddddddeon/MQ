@@ -15,6 +15,8 @@ namespace MQ.Client
         public string QueueName { get; set; }
         private byte[] _bytes = new byte[1024];
         private int _size;
+        private StringBuilder FullMessage = new StringBuilder();
+        public string Terminator = "END;\n";
 
         public Client()
         {
@@ -66,13 +68,14 @@ namespace MQ.Client
         public async Task Write(string message)
         {
             byte[] bytes = Encoding.ASCII.GetBytes(message);
-            await _writer.WriteLineAsync(message);
+            await _writer.WriteAsync(message);
         }
 
         public async Task<string> Read()
         {
             byte[] buf = new byte[1024];
             int len;
+            FullMessage.Clear();
 
             while (true)
             {
@@ -81,14 +84,22 @@ namespace MQ.Client
                 {
                     break;
                 }
-                return Encoding.ASCII.GetString(buf, 0, len);
+
+                string message = Encoding.ASCII.GetString(buf, 0, len);
+                FullMessage.Append(message);
+
+                int index = message.IndexOf(Terminator);
+                if (index > -1 && index == message.Length - Terminator.Length)
+                {
+                    return StripTerminator(FullMessage.ToString());
+                }
             }
             return "";
         }
 
         public async Task Enqueue(string message)
         {
-            await Write("EN;NAME=chris;" + message + "END;");
+            await Write("EN;NAME=chris;" + message + Terminator);
             string res = await Read();
             Console.WriteLine(res);
         }
@@ -96,9 +107,14 @@ namespace MQ.Client
         public async Task<string> Dequeue()
         {
             //TODO check for queue name
-            await Write("DE;END;");
+            await Write("DE;" + Terminator);
             string result = await Read();
             return result;
+        }
+
+        public string StripTerminator(string str)
+        {
+            return str.Replace(Terminator, "");
         }
     }
 }

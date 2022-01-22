@@ -51,7 +51,6 @@ namespace MQ.Broker
             Channel channel = new Channel(ns, queueContainers);
             channels.Append(channel);
 
-            await channel.Send("> ");
             await channel.ReadAndRespond();
         }
     }

@@ -37,6 +37,8 @@ namespace MQ.Broker
 
         public async Task ReadAndRespond()
         {
+            await Send(">" + MessageTerminator);
+
             while (IsConnected)
             {
                 Data = new byte[1024];
@@ -48,7 +50,7 @@ namespace MQ.Broker
 
                 string message = Encoding.ASCII.GetString(Data, 0, Recv);
                 HandleHeaders(message);
-                HandleMessage(message);
+                await HandleMessage(message);
                 HandleDisconnect(message);
             }
         }
@@ -89,7 +91,7 @@ namespace MQ.Broker
             FullMessage.Append(message);
         }
 
-        private void HandleMessage(string message)
+        private async Task HandleMessage(string message)
         {
             // respond only if terminator string is actually at the end of the message
             if (IsPresentAtEnd(message, MessageTerminator))
@@ -104,7 +106,7 @@ namespace MQ.Broker
                 {
                     Container.Queue.Enqueue(fullMessageString);
                     FullMessage.Clear();
-                    Send("OK");
+                    await Send("OK" + MessageTerminator);
                 }
                 else if (Operation == "DE")
                 {
@@ -113,7 +115,7 @@ namespace MQ.Broker
                     {
                         item = Container.Queue.Dequeue();
                     }
-                    Send(item);
+                    await Send(item + MessageTerminator);
                 }
             }
         }

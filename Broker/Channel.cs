@@ -61,7 +61,7 @@ namespace MQ.Broker
             var match = HeadersRegex.Match(message);
             var captureGroups = match.Groups;
 
-            Operation = captureGroups[1].Value;
+            Operation = captureGroups[1].Value.Length > 0 ? captureGroups[1].Value : Operation;
 
             if (Operation == "EN" && !captureGroups[1].Success && !QueueConnected)
             {

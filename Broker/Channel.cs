@@ -101,6 +101,7 @@ namespace MQ.Broker
                 Console.WriteLine("Reached end of message! {0}", fullMessageString);
                 Console.WriteLine("queueContainers: {0}", QueueContainers.Count);
                 Console.WriteLine("Queue name: {0}", Container.Name);
+                Console.WriteLine("Message: {0}", fullMessageString);
 
                 if (Operation == "EN")
                 {

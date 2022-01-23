@@ -10,12 +10,12 @@ The broker is a TCP server that exposes queues that can be enqueued to, and dequ
 The "protocol" is relatively simple. An example of an enqueue command that the client sends is as follows:
 
 ```
-EN;NAME=myqueue;this is a messageEND\n;
+EN;NAME=myqueue;this is a messageEND;\n;
 ```
 
 - `EN` specifies that the client wants to enqueue a message.
 - `NAME=myqueue` sets the queue name. If a queue by that name does not exist, the server will create it. The server will then attach the queue to the channel object, associating any further requests from that client to that queue, unless and until the client specifies a new queue name.
-- `this is a messageEND\n`: The message always ends in the terminator string `END;\n` and will be stripped out when dequeued by the client. The client can send long messages spanning multiple TCP packets and the server will concatenate them as one message in the queue, as long as the terminator string appears at the end of the last packet. 
+- `this is a messageEND;\n`: The message always ends in the terminator string `END;\n` and will be stripped out when dequeued by the client. The client can send long messages spanning multiple TCP packets and the server will concatenate them as one message in the queue, as long as the terminator string appears at the end of the last packet. 
 
 To dequeue a message from the queue, the client sends a command such as this:
 
@@ -26,7 +26,7 @@ DE;END;\n
 or, if the queue name hasn't yet been specified,
 
 ```
-DE;NAME=queuename;END;
+DE;NAME=queuename;END;\n
 ```
 
 This will return a string with the headers and terminator string stripped out. 

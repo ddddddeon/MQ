@@ -77,6 +77,7 @@ namespace MQ.Broker
                 if (existingQueueContainer != null)
                 {
                     Container = existingQueueContainer;
+                    QueueConnected = true;
                 }
                 else
                 {

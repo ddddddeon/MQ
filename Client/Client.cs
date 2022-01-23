@@ -104,10 +104,15 @@ namespace MQ.Client
             Console.WriteLine(res);
         }
 
-        public async Task<string> Dequeue()
+        public async Task<string> Dequeue(string? queueName)
         {
-            //TODO check for queue name
-            await Write("DE;" + Terminator);
+            string queueHeader = "";
+            if (queueName != null)
+            {
+                queueHeader = "NAME=" + queueName + ";";
+            }
+
+            await Write("DE;" + queueHeader + Terminator);
             string result = await Read();
             return result;
         }

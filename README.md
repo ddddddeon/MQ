@@ -3,7 +3,7 @@ An asynchronous TCP message queueing system written in C#
 
 ## Broker/Client
 
-The broker is a TCP server that exposes queues that can be enqueued to, and dequeued from, by a TCP client. The client is a wrapper for the simple "protocol" that the server understands. When a client opens a socket connection to the server, a channel is created. If the client specifies a queue name, the server fetches or creates the queue and allows the client to run enqueue and dequeue commands. 
+The broker is a TCP server that exposes queues that can be enqueued to, and dequeued from, by a TCP client. The client is a wrapper for the simple "protocol" that the server understands. When a client opens a socket connection to the server, a channel is created, associating the socket connection with a queue data structure in memory. If the client specifies a queue name, the server fetches or creates the queue and allows the client to run enqueue and dequeue commands. If no queue name is specified, a queue is created with the name set to a Unix timestamp. 
 
 ## The protocol
 

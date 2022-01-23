@@ -63,11 +63,10 @@ namespace MQ.Broker
 
             Operation = captureGroups[1].Value.Length > 0 ? captureGroups[1].Value : Operation;
 
-            if (Operation == "EN" && !captureGroups[1].Success && !QueueConnected)
+            if (Operation == "EN" && !QueueConnected)
             {
-                // TODO: make unique
-                string uniqueQueueName = "foobar";
-                CreateQueueContainer(uniqueQueueName);
+                string timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds().ToString();
+                CreateQueueContainer(timestamp);
             }
             else if (captureGroups[2].Success && captureGroups[3].Success)
             {

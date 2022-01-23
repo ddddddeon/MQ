@@ -1,5 +1,5 @@
 # MQ
-An asynchronous TCP message queueing system written in C#
+An asynchronous TCP message queuing system written in C#
 
 ## Broker/Client
 
